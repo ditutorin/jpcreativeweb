@@ -67,7 +67,7 @@
         @keyframes pulse-glow { 0%,100% { box-shadow:0 0 0 0 rgba(37,211,102,0.5); } 50% { box-shadow:0 0 0 12px rgba(37,211,102,0); } }
         .wa-pulse { animation:pulse-glow 2s ease-in-out infinite; }
 
-        /* ===== MODAL FIX ===== */
+        /* ===== MODAL FIX - GABUNGAN ===== */
         .modal-overlay {
             opacity: 0;
             visibility: hidden;
@@ -85,6 +85,14 @@
         }
         .modal-overlay.active .modal-content {
             transform: scale(1) translateY(0);
+        }
+
+        /* ===== FIX Z-INDEX MODAL ===== */
+        #bookDetailModal {
+            z-index: 100 !important;
+        }
+        #catalogModal {
+            z-index: 50 !important;
         }
 
         .nav-scrolled { background:rgba(17,17,17,0.9)!important; backdrop-filter:blur(20px)!important; border-bottom:1px solid rgba(255,255,255,0.05); }
@@ -658,10 +666,10 @@
     <i class="fab fa-whatsapp"></i>
 </a>
 
-<!-- ==================== WHATSAPP POPUP ==================== -->
+<!-- ==================== WHATSAPP POPUP FIX ==================== -->
 <div id="waPopup" class="fixed bottom-24 right-6 z-40 hidden">
     <div class="glass-dark rounded-2xl p-5 w-72 shadow-2xl relative">
-        <!-- FIX: Tambahkan class relative di parent, dan tombol close di dalamnya -->
+        <!-- FIX: Tambahkan class relative di parent -->
         <button onclick="document.getElementById('waPopup').classList.add('hidden')" class="absolute top-3 right-3 text-white/40 hover:text-white text-sm">
             <i class="fas fa-times"></i>
         </button>
@@ -680,9 +688,9 @@
 </div>
 
 <!-- ==================== BOOK DETAIL MODAL ==================== -->
-<div id="bookDetailModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.85);">
+<div id="bookDetailModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.85);">
     <div class="modal-content glass-dark rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
-        <!-- FIX: Tombol close di dalam modal-content dengan position absolute -->
+        <!-- Tombol close -->
         <button onclick="closeBookDetail()" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
             <i class="fas fa-times"></i>
         </button>
@@ -725,7 +733,7 @@
 </div>
 
 <!-- ==================== FULL CATALOG MODAL ==================== -->
-<div id="catalogModal" class="modal-overlay fixed inset-0 z-50" style="background:rgba(0,0,0,0.9);">
+<div id="catalogModal" class="modal-overlay fixed inset-0 z-[50]" style="background:rgba(0,0,0,0.9);">
     <div class="modal-content h-full overflow-y-auto">
         <div class="max-w-7xl mx-auto px-5 md:px-8 py-8">
             <div class="flex items-center justify-between mb-8">
@@ -748,14 +756,10 @@
 // ============================================
 // KONFIGURASI CMS SPREADSHEETS
 // ============================================
-// Paste URL published CSV Google Sheet Anda di sini
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTuNiAFBvYi3AND5DurjHvQKF8W1IYqXkF8HrFqVGwf-gGRc94MKyR_nCYneaDDxk7hYt_Pn1eZD6gZ/pub?output=csv';
-
-// Base URL repository GitHub untuk gambar buku
 const GITHUB_IMAGE_BASE = 'https://raw.githubusercontent.com/ditutorin/jpcreativeweb/main/covers/';
-// ============================================
 
-// Fallback data buku (digunakan jika gagal fetch dari Spreadsheet)
+// Fallback data buku
 const FALLBACK_BOOKS = [
     {
         judul: "Jejak Kata-Kata",
@@ -833,7 +837,6 @@ const FALLBACK_BOOKS = [
 
 let allBooks = [];
 
-// Mendapatkan URL gambar buku
 function getBookImageUrl(book) {
     const foto = book.foto || '';
     if (foto.startsWith('http')) return foto;
@@ -843,14 +846,10 @@ function getBookImageUrl(book) {
     return GITHUB_IMAGE_BASE + foto;
 }
 
-// Format harga ke Rupiah
 function formatRupiah(num) {
     return 'Rp' + Number(num).toLocaleString('id-ID');
 }
 
-// ============================================
-// PARSER CSV SEDERHANA
-// ============================================
 function parseCSV(text) {
     const rows = [];
     let current = '';
@@ -898,7 +897,6 @@ function parseCSV(text) {
     return rows;
 }
 
-// Fetch data dari Google Sheets
 async function fetchBookData() {
     try {
         const res = await fetch(SHEET_CSV_URL);
@@ -930,7 +928,6 @@ async function fetchBookData() {
     }
 }
 
-// Render buku di grid
 function renderBookCard(book, container) {
     const card = document.createElement('div');
     card.className = 'book-card glass-card rounded-2xl overflow-hidden cursor-pointer group';
@@ -951,7 +948,6 @@ function renderBookCard(book, container) {
     container.appendChild(card);
 }
 
-// Render galeri buku di landing page (4 terbaru)
 function renderGallery() {
     const grid = document.getElementById('bookGrid');
     grid.innerHTML = '';
@@ -959,18 +955,56 @@ function renderGallery() {
     recentBooks.forEach(book => renderBookCard(book, grid));
 }
 
-// Render katalog lengkap di modal
+// ============================================
+// RENDER KATALOG LENGKAP - FIX
+// ============================================
 function renderCatalog() {
     const grid = document.getElementById('catalogGrid');
     grid.innerHTML = '';
-    allBooks.forEach(book => renderBookCard(book, grid));
+    allBooks.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card glass-card rounded-2xl overflow-hidden cursor-pointer group';
+        card.innerHTML = `
+            <div class="aspect-[3/4] overflow-hidden relative">
+                <img src="${getBookImageUrl(book)}" alt="${book.judul}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80'">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                    <span class="text-xs font-medium text-white/80"><i class="fas fa-eye mr-1"></i> Lihat Detail</span>
+                </div>
+            </div>
+            <div class="p-4">
+                <h4 class="font-bold text-sm truncate">${book.judul}</h4>
+                <p class="text-white/40 text-xs mt-1">${book.penulis}</p>
+                <p class="text-jp-yellow font-bold text-sm mt-2">${formatRupiah(book.harga)}</p>
+            </div>
+        `;
+        card.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('🖱️ Klik buku di catalog:', book.judul);
+            openBookDetail(book);
+        });
+        grid.appendChild(card);
+    });
+    console.log('✅ Katalog lengkap dirender, total:', allBooks.length, 'buku');
 }
 
 // ============================================
-// FIX: Buka detail buku dengan debug
+// FIX: Buka detail buku
 // ============================================
 function openBookDetail(book) {
     console.log('📖 Membuka detail buku:', book.judul);
+    
+    if (!book) {
+        console.error('❌ Buku tidak ditemukan!');
+        return;
+    }
+    
+    // FIX: Tutup modal katalog dulu jika terbuka
+    const catalogModal = document.getElementById('catalogModal');
+    if (catalogModal.classList.contains('active')) {
+        catalogModal.classList.remove('active');
+        console.log('🔒 Katalog ditutup otomatis');
+    }
     
     // Ambil semua elemen
     const modal = document.getElementById('bookDetailModal');
@@ -994,55 +1028,57 @@ function openBookDetail(book) {
     synopsis.textContent = book.sinopsis;
     waLink.href = `https://wa.me/6282112038795?text=Halo%20JP%20Creative,%20saya%20ingin%20memesan%20buku%20"${encodeURIComponent(book.judul)}"`;
     
-    // Tampilkan modal
+    // Tampilkan modal detail
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     
-    console.log('✅ Modal seharusnya terbuka');
+    console.log('✅ Modal detail terbuka untuk:', book.judul);
 }
 
-// ============================================
-// FIX: Tutup detail buku
-// ============================================
 function closeBookDetail() {
-    document.getElementById('bookDetailModal').classList.remove('active');
+    const modal = document.getElementById('bookDetailModal');
+    modal.classList.remove('active');
     document.body.style.overflow = '';
-    console.log('❌ Modal ditutup');
+    console.log('❌ Modal detail ditutup');
 }
 
-// Buka katalog lengkap
-document.getElementById('btnFullCatalog').addEventListener('click', () => {
+// ============================================
+// BUKA KATALOG LENGKAP
+// ============================================
+document.getElementById('btnFullCatalog').addEventListener('click', function(e) {
+    e.preventDefault();
+    console.log('📚 Membuka katalog lengkap...');
+    
+    // Tutup modal detail jika terbuka
+    const detailModal = document.getElementById('bookDetailModal');
+    if (detailModal.classList.contains('active')) {
+        detailModal.classList.remove('active');
+    }
+    
     renderCatalog();
-    document.getElementById('catalogModal').classList.add('active');
+    const modal = document.getElementById('catalogModal');
+    modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 });
 
 function closeCatalog() {
-    document.getElementById('catalogModal').classList.remove('active');
+    const modal = document.getElementById('catalogModal');
+    modal.classList.remove('active');
     document.body.style.overflow = '';
+    console.log('❌ Katalog ditutup');
 }
 
-// ============================================
-// FIX: Tutup modal klik di luar
-// ============================================
+// Tutup modal klik di luar
 document.getElementById('bookDetailModal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('bookDetailModal')) {
-        closeBookDetail();
-    }
+    if (e.target === document.getElementById('bookDetailModal')) closeBookDetail();
 });
-
 document.getElementById('catalogModal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('catalogModal')) {
-        closeCatalog();
-    }
+    if (e.target === document.getElementById('catalogModal')) closeCatalog();
 });
 
 // ESC tutup modal
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { 
-        closeBookDetail(); 
-        closeCatalog(); 
-    }
+    if (e.key === 'Escape') { closeBookDetail(); closeCatalog(); }
 });
 
 // ============================================
@@ -1092,14 +1128,14 @@ function toggleFaq(btn) {
 }
 
 // ============================================
-// WHATSAPP POPUP (muncul setelah 5 detik)
+// WHATSAPP POPUP
 // ============================================
 setTimeout(() => {
     document.getElementById('waPopup').classList.remove('hidden');
 }, 5000);
 
 // ============================================
-// INTERSECTION OBSERVER (Animasi scroll)
+// INTERSECTION OBSERVER
 // ============================================
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -1126,7 +1162,6 @@ async function init() {
     await fetchBookData();
     renderGallery();
     observeElements();
-    console.log('🚀 JP Creative siap!');
 }
 
 init();
